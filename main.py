@@ -12,8 +12,9 @@ from javax.swing import JTabbedPane;
 from javax.swing import JTable;
 from javax.swing import SwingUtilities;
 from javax.swing.table import AbstractTableModel;
+from java.net import URL
 from threading import Lock
-import requests
+import threading
 
 
 PAYLOADS = ["--", "'"]
@@ -92,11 +93,16 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener, IMessageEditorController,
         # only process requests
         if messageIsRequest:
             return
+
+        # for now we only plan to use this extension if the request was in scope and is a GET request, this will likely change in future
+        analyzedRequest = self._helpers.analyzeRequest(messageInfo)
+        if not(analyzedRequest.getMethod() == "GET" and self._callbacks.isInScope(analyzedRequest.getUrl())):
+            return
         
         # create a new log entry with the message details
         self._lock.acquire()
         row = self._jobs.size()
-        self._jobs.add(FuzzingJob(row, toolFlag, self._callbacks.saveBuffersToTempFiles(messageInfo), messageInfo, self._helpers.analyzeRequest(messageInfo)))
+        self._jobs.add(FuzzingJob(row, toolFlag, self._callbacks.saveBuffersToTempFiles(messageInfo), messageInfo, analyzedRequest, self._callbacks))
         self.fireTableRowsInserted(row, row)
         self._lock.release()
 
@@ -240,7 +246,7 @@ class FuzzingJob:
     STATUS_STARTED = "started"
     STATUS_FINISHED = "finished"
 
-    def __init__(self, id1, tool, requestResponse, messageInfo, analyzedRequest):
+    def __init__(self, id1, tool, requestResponse, messageInfo, analyzedRequest, callbacks):
         self._tool = tool
         self._requestResponse = requestResponse
         self._messageInfo = messageInfo
@@ -248,29 +254,55 @@ class FuzzingJob:
         self._id = id1
         self._parameters = [] #find out how to do this
         self._fuzzingRequests = []
+        self._callbacks = callbacks
         self.initialize()
     
     def initialize(self):
         self._status = FuzzingJob.STATUS_ADDED
 
-        #check if GET request
-
         #check if in scope
-        for parameter in self._selectedJob._analyzedRequest.getParameters():
-            for payload in payloads:
+        for parameter in self._analyzedRequest.getParameters():
+            for payload in PAYLOADS:
                 newFuzzingRequest = {
                     "parameter": parameter,
                     "payload": payload
                 }
-                url = self._selectedJob._analyzedRequest.getUrl()
-                value_start = self._selectedJob._analyzedRequest.getValueStart()
-                value_end = self._selectedJob._analyzedRequest.getValueEnd()
-                url = url[0:value_start]+url[value_end:-1]
+                url = str(self._analyzedRequest.getUrl())
+                value_start = self._analyzedRequest.getParameters()[0].getValueStart()
+                value_end = self._analyzedRequest.getParameters()[0].getValueEnd()
+                url = URL(url[0:value_start]+url[value_end:-1])
 
-                response = requests.get(url, headers=self._selectedJob._analyzedRequest.getHeaders())
+                headers = self._analyzedRequest.getHeaders()
+                bodyOffset = self._analyzedRequest.bodyOffset 
 
-                newFuzzingRequest["status_code"] = response.status_code
-                newFuzzingRequest["length"] = len(response.content)
+                host = self._messageInfo.getHost()
+                port = self._messageInfo.getPort()
+                protocol = self._messageInfo.getProtocol()
+                protoChoice = True if protocol.lower() == 'https' else False
 
+                # Build the request to be sent
+                request = self._callbacks.getHelpers().buildHttpRequest(url)
 
-        #if GET request
+                # Need to make the HTTP request in new thread to
+                # prevent the GUI from locking up while the 
+                # request is being made.
+                t = threading.Thread(
+                    target=self.makeRequest,
+                    args=[host, port, protoChoice, request]
+                )
+                t.daemon = True
+                t.start()
+
+                newFuzzingRequest["status_code"] = "response.status_code"
+                newFuzzingRequest["length"] = "len(response.content)"
+
+    def makeRequest(self, host, port, protoChoice, request):
+        """Makes an HTTP request and writes the response to
+        the response text area.
+        """
+        resp = self._callbacks.makeHttpRequest(
+            host,           # string
+            port,           # int
+            protoChoice,    # bool
+            request         # bytes
+        )
