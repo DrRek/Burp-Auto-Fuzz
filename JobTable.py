@@ -65,7 +65,7 @@ class JobTableModel(AbstractTableModel):
             if columnIndex == 5:
                 headers = fuzEntry["analyzedResp"].getHeaders()
                 for header in headers:
-                    if header.startsWith("Date: "):
+                    if header.startswith("Date: "):
                         return header[6:-1] 
                 return "n/a"
             return ""
