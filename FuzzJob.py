@@ -19,6 +19,12 @@ class FuzzJob:
         self._messageInfo = messageInfo
         self._analyzedRequest = analyzedRequest
         self._fuzList = ArrayList()
+        self._fuzList.add({
+            "reqResp": requestResponse,
+            "analyzedResp": self._extender._helpers.analyzeResponse(requestResponse.getResponse()),
+            "original": True,
+            "id": 0
+        })
         self._fuzLock = Lock()
         self.initialize()
     
@@ -30,40 +36,23 @@ class FuzzJob:
             for payload in PAYLOADS:
                 payload = parameter.getValue()+payload
 
+                newParameter = self._extender._helpers.buildParameter(parameter.getName(), parameter.getValue()+payload, parameter.getType())
+                newRequest = self._extender._helpers.updateParameter(self._messageInfo.getRequest(), newParameter)
+
                 newFuzzingRequest = {
-                    "parameter": parameter.getName(),
-                    "payload": payload
+                    "parameter": newParameter,
+                    "id": self._fuzList.size()
                 }
                 self.addNewFuzzingToJob(newFuzzingRequest)
 
-                url = str(self._analyzedRequest.getUrl())
-                value_start = self._analyzedRequest.getParameters()[0].getValueStart()
-                value_end = self._analyzedRequest.getParameters()[0].getValueEnd()
-                url = URL(url[0:value_start]+url[value_end:-1])
-
-                headers = self._analyzedRequest.getHeaders()
-                bodyOffset = self._analyzedRequest.bodyOffset 
-
-                host = self._messageInfo.getHost()
-                port = self._messageInfo.getPort()
-                protocol = self._messageInfo.getProtocol()
-                protoChoice = True if protocol.lower() == 'https' else False
-
-                # Build the request to be sent
-                request = self._extender._callbacks.getHelpers().buildHttpRequest(url)
-                newFuzzingRequest["request"] = request
-
-                # Need to make the HTTP request in new thread to
-                # prevent the GUI from locking up while the 
-                # request is being made.
                 t = threading.Thread(
                     target=self.makeRequest,
-                    args=[host, port, protoChoice, request, newFuzzingRequest]
+                    args=[newRequest, newFuzzingRequest]
                 )
                 t.daemon = True
                 t.start()
 
-    def makeRequest(self, host, port, protoChoice, request, newFuzzingRequest):
+    def makeRequest(self, request, newFuzzingRequest):
         try:
             """Makes an HTTP request and writes the response to
             the response text area.

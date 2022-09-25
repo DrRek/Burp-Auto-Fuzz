@@ -47,17 +47,27 @@ class JobTableModel(AbstractTableModel):
         try:
             fuzEntry = self._extender.getSelectedJob().getFuzByRow(rowIndex)
             if columnIndex == 0:
-                return self._extender.getSelectedJob()._analyzedRequest.getUrl()
+                return fuzEntry["id"]
             if columnIndex == 1:
-                return fuzEntry["parameter"]
+                try:
+                    return fuzEntry["parameter"].getName()
+                except KeyError:
+                    return "NO_CHANGE"
             if columnIndex == 2:
-                return fuzEntry["payload"]
+                try:
+                    return fuzEntry["parameter"].getValue()
+                except KeyError:
+                    return "NO_CHANGE"
             if columnIndex == 3:
                 return fuzEntry["reqResp"].getStatusCode()
             if columnIndex == 4:
                 return len(fuzEntry["reqResp"].getResponse())
             if columnIndex == 5:
-                return fuzEntry["analyzedResp"].getHeaders()[0]
+                headers = fuzEntry["analyzedResp"].getHeaders()
+                for header in headers:
+                    if header.startsWith("Date: "):
+                        return header[6:-1] 
+                return "n/a"
             return ""
         except Exception as e:
             self._extender.log(e, True)
