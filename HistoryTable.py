@@ -7,6 +7,7 @@ class HistoryTable(JTable):
 
         model = HistoryTableModel(extender)
         self.setModel(model)
+        self.setAutoCreateRowSorter(True)
     
     def changeSelection(self, row, col, toggle, extend):
         self.getModel().selectJob(row)        

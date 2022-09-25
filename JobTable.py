@@ -11,6 +11,7 @@ class JobTable(JTable):
         self.setModel(model)
 
         self.addMouseListener(JobTableMouseListener(extender))
+        self.setAutoCreateRowSorter(True)
 
     def updateTable(self):
         self.getModel().fireTableDataChanged()

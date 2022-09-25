@@ -29,7 +29,7 @@ class FuzzJob:
         self.initialize()
     
     def initialize(self):
-        self._status = FuzzJob.STATUS_ADDED
+        self._status = FuzzJob.STATUS_STARTED
 
         #check if in scope
         for parameter in self._analyzedRequest.getParameters():
@@ -62,6 +62,11 @@ class FuzzJob:
             newFuzzingRequest["reqResp"] = reqResp
             newFuzzingRequest["analyzedResp"] = self._extender._helpers.analyzeResponse(reqResp.getResponse())
             self._extender.updateFuzingTableIfShown(self._id)
+
+            if newFuzzingRequest["id"] == self.getFuzLength():
+                self._status = FuzzJob.STATUS_FINISHED
+                self._extender.updateFuzingTableIfShown(self._id)
+
         except Exception as e:
             self._extender.log(e, True)
 
