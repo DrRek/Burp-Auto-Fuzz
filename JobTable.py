@@ -10,6 +10,13 @@ class JobTable(JTable):
         model = JobTableModel(extender)
         self.setModel(model)
 
+        self.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN); 
+        colModel = self.getColumnModel()
+        colModel.getColumn(0).setMaxWidth(50)    
+        colModel.getColumn(1).setMaxWidth(100)
+        colModel.getColumn(3).setMaxWidth(50)    
+        colModel.getColumn(4).setMaxWidth(50)
+
         self.addMouseListener(JobTableMouseListener(extender))
         self.setAutoCreateRowSorter(True)
 

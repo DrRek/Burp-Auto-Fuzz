@@ -7,6 +7,14 @@ class HistoryTable(JTable):
 
         model = HistoryTableModel(extender)
         self.setModel(model)
+
+        self.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN); 
+        colModel = self.getColumnModel()
+        colModel.getColumn(0).setMaxWidth(50)    
+        colModel.getColumn(1).setMaxWidth(50)
+        colModel.getColumn(2).setMaxWidth(50)    
+        colModel.getColumn(3).setMaxWidth(50)
+
         self.setAutoCreateRowSorter(True)
     
     def changeSelection(self, row, col, toggle, extend):
