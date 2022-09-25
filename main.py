@@ -1,6 +1,6 @@
 from burp import IBurpExtender
 from burp import ITab
-from burp import IHttpListener
+from burp import IHttpListener, IParameter
 from java.awt import Component;
 from java.io import PrintWriter;
 from java.util import ArrayList;
@@ -92,10 +92,12 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener):
 
         # for now we only plan to use this extension if the request was in scope and is a GET request, this will likely change in future
         analyzedRequest = self._helpers.analyzeRequest(messageInfo)
-        if not(analyzedRequest.getMethod() == "GET" and self._callbacks.isInScope(analyzedRequest.getUrl())):
+        if not(self._callbacks.getToolName(toolFlag) == "Proxy" and self._callbacks.isInScope(analyzedRequest.getUrl())):
             return
 
-        if not self._callbacks.getToolName(toolFlag) == "Proxy":
+        # if there are not parameters (all but cookies) to fuz return
+        p = analyzedRequest.getParameters()
+        if p.size() == 0 or (p[0].getType == IParameter.PARAM_COOKIE and p[-1].getType == IParameter.PARAM_COOKIE):
             return
         
         # create a new log entry with the message details

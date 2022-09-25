@@ -34,6 +34,8 @@ class FuzzJob:
 
         #check if in scope
         for parameter in self._analyzedRequest.getParameters():
+            if parameter.getType() == IParameter.PARAM_COOKIE:
+                continue
             for payload in PAYLOADS:
                 if parameter.getType() == IParameter.PARAM_URL:
                     payload = parameter.getValue()+self._extender._helpers.urlEncode(payload)
