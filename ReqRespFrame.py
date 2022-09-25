@@ -5,6 +5,7 @@ from java.awt import BorderLayout, GridLayout, Toolkit
 from java.awt.datatransfer import StringSelection
 from java.awt.datatransfer import Clipboard
 from java.util import ArrayList
+from javax.swing import JSplitPane;
 
 import string
 import random
@@ -15,10 +16,9 @@ import urllib
 import re
 import sys
 import os
-import traceback
 
 
-class ExampleFrame(swing.JFrame, IMessageEditorController):
+class ReqRespFrame(swing.JFrame, IMessageEditorController):
     def __init__(self, extender, reqRespToView):
         try:
             self._extender = extender
@@ -31,36 +31,39 @@ class ExampleFrame(swing.JFrame, IMessageEditorController):
             self.savePanel.setLayout(BorderLayout())
             self.savePanel.setBorder(swing.BorderFactory.createEmptyBorder(10, 10, 10, 10))
 
-            tabs = swing.JTabbedPane()
+            tabs = JSplitPane(JSplitPane.VERTICAL_SPLIT)
             self._requestViewer = self.callbacks.createMessageEditor(self, False)
             self._responseViewer = self.callbacks.createMessageEditor(self, False)
-            tabs.addTab("Request", self._requestViewer.getComponent())
-            tabs.addTab("Response", self._responseViewer.getComponent())
+            tabs.setLeftComponent(self._requestViewer.getComponent())
+            tabs.setRightComponent(self._responseViewer.getComponent())
+
+            self._requestViewer.setMessage(self._reqRespToView["reqResp"].getRequest(), True)
+            self._responseViewer.setMessage(self._reqRespToView["reqResp"].getResponse(), False)
 
             self.savePanel.add(tabs)
             self.add(self.savePanel)
 
             self.setTitle("Request and response viewer")
-            self.setSize(1000, 250)
+            self.setSize(1250, 750)
             self.setDefaultCloseOperation(swing.JFrame.DISPOSE_ON_CLOSE)
             self.setLocationRelativeTo(None)
             
             self.callbacks.customizeUiComponent(self)
+            self.callbacks.customizeUiComponent(self.savePanel)
+            self.callbacks.customizeUiComponent(tabs)
             self.setVisible(True)
         except Exception as e:
-            self._extender.log(e)
-            traceback.print_exc()
-        return
+            self._extender.log(e, True)
 
     #
     # implement IMessageEditorController
     # this allows our request/response viewers to obtain details about the messages being displayed
     #
     def getHttpService(self):
-        return self._reqRespToView["httpservice"]
+        return self._reqRespToView["reqResp"].getHttpService()
 
     def getRequest(self):
-        return self._reqRespToView["request"]
+        return self._reqRespToView["reqResp"].getRequest()
 
     def getResponse(self):
-        return self._reqRespToView["response"]
+        return self._reqRespToView["reqResp"].getResponse()

@@ -17,7 +17,8 @@ from JobTable import JobTable
 from FuzzJob import FuzzJob
 from javax.swing import JFrame
 from javax.swing import JPanel
-from ExampleFrame import ExampleFrame
+from ReqRespFrame import ReqRespFrame
+import traceback
 
 class BurpExtender(IBurpExtender, ITab, IHttpListener):
     
@@ -37,6 +38,7 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener):
         self._jobs = ArrayList()
         self._selectedJob = None
         self._lock = Lock()
+        self._errorLock = Lock()
         
         # main split pane
         splitpane = JSplitPane(JSplitPane.VERTICAL_SPLIT)
@@ -132,32 +134,13 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener):
     #
     def log(self, msg, error=False):
         if error:
+            self._errorLock.acquire()
             self._stderr.println(msg)
+            traceback.print_exc()
+            self._errorLock.release()
         else:
             self._stdout.println(msg)
 
     def openRequestResponsePanel(self, obj):
-        self.log("asd")
-        self.log(obj)
-
-        ExampleFrame(self, obj)
-
-        #self._reqRespToView = obj
-#
-        #frame = JFrame("Panel Example")    
-        # # tabs with request/response viewers
-        #tabs = JTabbedPane()
-        #requestViewer = self._callbacks.createMessageEditor(self, False)
-        #responseViewer = self._callbacks.createMessageEditor(self, False)
-        #tabs.addTab("Request", requestViewer.getComponent())
-        #tabs.addTab("Response", responseViewer.getComponent()) 
-        #frame.add(tabs)
-        #self._callbacks.customizeUiComponent(frame)
-        #self._callbacks.customizeUiComponent(tabs)
-#
-        #frame.setVisible(True)
-
-        #requestViewer.setMessage(obj["request"], True)
-        #responseViewer.setMessage(obj["response"], False)
-
+        ReqRespFrame(self, obj)
 

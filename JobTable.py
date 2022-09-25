@@ -1,6 +1,7 @@
 from javax.swing import JTable;
 from javax.swing.table import AbstractTableModel;
 from java.awt.event import MouseListener
+import traceback
 
 class JobTable(JTable):
     def __init__(self, extender):
@@ -52,14 +53,15 @@ class JobTableModel(AbstractTableModel):
             if columnIndex == 2:
                 return fuzEntry["payload"]
             if columnIndex == 3:
-                return fuzEntry["resp"].getStatusCode()
+                return fuzEntry["reqResp"].getStatusCode()
             if columnIndex == 4:
-                return fuzEntry["analyzedResp"].getHeaders("Content-Length")
+                return len(fuzEntry["reqResp"].getResponse())
             if columnIndex == 5:
-                return fuzEntry["analyzedResp"].getHeaders("Date")
+                return fuzEntry["analyzedResp"].getHeaders()[0]
             return ""
         except Exception as e:
             self._extender.log(e, True)
+            traceback.print_exc()
             return "Exception"
 
 class JobTableMouseListener(MouseListener):
@@ -89,9 +91,12 @@ class JobTableMouseListener(MouseListener):
 
     # event.getClickCount() returns the number of clicks.
     def mouseClicked(self, event):
-        if event.getClickCount() == 2:
-            self._extender.openRequestResponsePanel(self.getClickedRow(event))
-            return
+        try:
+            if event.getClickCount() == 2:
+                self._extender.openRequestResponsePanel(self.getClickedRow(event))
+                return
+        except Exception as e:
+            self._extender.log(e, True)
 
     def mouseEntered(self, event):
         pass

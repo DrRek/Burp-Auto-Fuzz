@@ -30,8 +30,6 @@ class FuzzJob:
             for payload in PAYLOADS:
                 payload = parameter.getValue()+payload
 
-                self._extender.log(parameter.getValue()+" "+payload)
-
                 newFuzzingRequest = {
                     "parameter": parameter.getName(),
                     "payload": payload
@@ -70,13 +68,11 @@ class FuzzJob:
             """Makes an HTTP request and writes the response to
             the response text area.
             """
-            resp = self._extender._callbacks.makeHttpRequest(self._messageInfo.getHttpService(), request)
+            reqResp = self._extender._callbacks.makeHttpRequest(self._messageInfo.getHttpService(), request)
 
-            newFuzzingRequest["httpservice"] = self._messageInfo.getHttpService()
-            newFuzzingRequest["response"] = resp
-            newFuzzingRequest["analyzedResp"] = self._extender._helpers.analyzeResponse(resp)
+            newFuzzingRequest["reqResp"] = reqResp
+            newFuzzingRequest["analyzedResp"] = self._extender._helpers.analyzeResponse(reqResp.getResponse())
             self._extender.updateFuzingTableIfShown(self._id)
-            self._extender
         except Exception as e:
             self._extender.log(e, True)
 
