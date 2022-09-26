@@ -12,6 +12,13 @@ ALLOWED_PARAMETERS = [
     IParameter.PARAM_XML_ATTR
 ]
 
+WORDS_TO_SEARCH_IN_RESPONSE = [
+    "error",
+    "exception",
+    "sql",
+    "whal"
+]
+
 def isParameterAllowed(parameter):
     if parameter.getType() in ALLOWED_PARAMETERS:
         return True

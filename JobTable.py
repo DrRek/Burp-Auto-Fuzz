@@ -2,6 +2,7 @@ from javax.swing import JTable;
 from javax.swing.table import AbstractTableModel;
 from java.awt.event import MouseListener
 import traceback
+import Utils
 
 class JobTable(JTable):
     def __init__(self, extender):
@@ -34,9 +35,10 @@ class JobTableModel(AbstractTableModel):
             return 0
 
     def getColumnCount(self):
-        return 6
+        return 6+len(Utils.WORDS_TO_SEARCH_IN_RESPONSE)
 
     def getColumnName(self, columnIndex):
+        lastIndexBeforeGreps = 4
         if columnIndex == 0:
             return "Id"
         if columnIndex == 1:
@@ -45,13 +47,16 @@ class JobTableModel(AbstractTableModel):
             return "payload"
         if columnIndex == 3:
             return "status"
-        if columnIndex == 4:
+        if columnIndex == lastIndexBeforeGreps:
             return "length"
-        if columnIndex == 5:
+        if columnIndex >= lastIndexBeforeGreps+1 and columnIndex <= lastIndexBeforeGreps + len(Utils.WORDS_TO_SEARCH_IN_RESPONSE):
+            return "Grep: "+Utils.WORDS_TO_SEARCH_IN_RESPONSE[columnIndex-lastIndexBeforeGreps-1]
+        if columnIndex == lastIndexBeforeGreps+len(Utils.WORDS_TO_SEARCH_IN_RESPONSE)+1:
             return "time"
         return ""
 
     def getValueAt(self, rowIndex, columnIndex):
+        lastIndexBeforeGreps = 4
         try:
             fuzEntry = self._extender.getSelectedJob().getFuzByRow(rowIndex)
             if columnIndex == 0:
@@ -70,7 +75,13 @@ class JobTableModel(AbstractTableModel):
                 return fuzEntry["reqResp"].getStatusCode()
             if columnIndex == 4:
                 return len(fuzEntry["reqResp"].getResponse())
-            if columnIndex == 5:
+            if columnIndex >= lastIndexBeforeGreps+1 and columnIndex <= lastIndexBeforeGreps + len(Utils.WORDS_TO_SEARCH_IN_RESPONSE):
+                greped = Utils.WORDS_TO_SEARCH_IN_RESPONSE[columnIndex-lastIndexBeforeGreps-1]
+                try:
+                    return fuzEntry["grep"][greped]
+                except:
+                    return "False"
+            if columnIndex == lastIndexBeforeGreps+len(Utils.WORDS_TO_SEARCH_IN_RESPONSE)+1:
                 headers = fuzEntry["analyzedResp"].getHeaders()
                 for header in headers:
                     if header.startswith("Date: "):

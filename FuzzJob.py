@@ -53,7 +53,8 @@ class FuzzJob:
 
                 newFuzzingRequest = {
                     "parameter": newParameter,
-                    "id": self._fuzList.size()
+                    "id": self._fuzList.size(),
+                    "grep": {}
                 }
                 self.addNewFuzzingToJob(newFuzzingRequest)
 
@@ -73,6 +74,12 @@ class FuzzJob:
 
             newFuzzingRequest["reqResp"] = reqResp
             newFuzzingRequest["analyzedResp"] = self._extender._helpers.analyzeResponse(reqResp.getResponse())
+
+            lenResponse = len(reqResp.getResponse())
+            for toSearch in Utils.WORDS_TO_SEARCH_IN_RESPONSE:
+                if self._extender._helpers.indexOf(reqResp.getResponse(), toSearch, False, 0, lenResponse) != -1:
+                    newFuzzingRequest["grep"][toSearch] = True
+
             self._extender.updateFuzingTableIfShown(self._id)
 
             if newFuzzingRequest["id"] == self.getFuzLength():

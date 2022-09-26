@@ -100,13 +100,14 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener):
         p = analyzedRequest.getParameters()
         if not Utils.hasSomeAllowedTypeParameters(p):
             return
+        
+        # create a new log entry with the message details
+        self._lock.acquire()
 
         # if I've already tested for it return
         if self.checkIfRequestAlreadyDone(analyzedRequest):
             return
         
-        # create a new log entry with the message details
-        self._lock.acquire()
         row = self._jobs.size()
         self._jobs.add(FuzzJob(self, row, toolFlag, self._callbacks.saveBuffersToTempFiles(messageInfo), messageInfo, analyzedRequest))
         self._historyTable.updateTable(row, row)
