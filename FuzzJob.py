@@ -58,20 +58,11 @@ class FuzzJob:
                 }
                 self.addNewFuzzingToJob(newFuzzingRequest)
 
-                t = threading.Thread(
-                    target=self.makeRequest,
-                    args=[newRequest, newFuzzingRequest]
-                )
-                t.daemon = True
-                t.start()
+                self._extender.requestor.addToTheQueue(newRequest, self._messageInfo.getHttpService(), lambda reqResp: self.finalizeJob(reqResp, newFuzzingRequest))
 
-    def makeRequest(self, request, newFuzzingRequest):
+    def finalizeJob(self, reqResp, newFuzzingRequest):
+        self._extender.log("is this ever called")
         try:
-            """Makes an HTTP request and writes the response to
-            the response text area.
-            """
-            reqResp = self._extender._callbacks.makeHttpRequest(self._messageInfo.getHttpService(), request)
-
             newFuzzingRequest["reqResp"] = reqResp
             newFuzzingRequest["analyzedResp"] = self._extender._helpers.analyzeResponse(reqResp.getResponse())
 
@@ -96,10 +87,9 @@ class FuzzJob:
         return self._fuzList.get(row)
 
     def addNewFuzzingToJob(self, fuz):
-        self._fuzLock.acquire()
-        self._fuzList.add(fuz)
-        self._extender.updateFuzingTableIfShown(self._id)
-        self._fuzLock.release()
+        with self._fuzLock:
+            self._fuzList.add(fuz)
+            self._extender.updateFuzingTableIfShown(self._id)
 
     def getId(self):
         return self._id

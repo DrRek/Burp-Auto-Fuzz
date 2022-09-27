@@ -72,9 +72,15 @@ class JobTableModel(AbstractTableModel):
                 except KeyError:
                     return "NO_CHANGE"
             if columnIndex == 3:
-                return fuzEntry["reqResp"].getStatusCode()
+                try:
+                    return fuzEntry["reqResp"].getStatusCode()
+                except:
+                    return "..."
             if columnIndex == 4:
-                return len(fuzEntry["reqResp"].getResponse())
+                try:
+                    return len(fuzEntry["reqResp"].getResponse())
+                except:
+                    return "..."
             if columnIndex >= lastIndexBeforeGreps+1 and columnIndex <= lastIndexBeforeGreps + len(Utils.WORDS_TO_SEARCH_IN_RESPONSE):
                 greped = Utils.WORDS_TO_SEARCH_IN_RESPONSE[columnIndex-lastIndexBeforeGreps-1]
                 try:

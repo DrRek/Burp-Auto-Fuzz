@@ -19,6 +19,9 @@ WORDS_TO_SEARCH_IN_RESPONSE = [
     "whal"
 ]
 
+HTTP_MAX_CONCURRENT_REQUEST = 1
+HTTP_REQUESTS_DELAY = 1000
+
 def isParameterAllowed(parameter):
     if parameter.getType() in ALLOWED_PARAMETERS:
         return True

@@ -20,6 +20,7 @@ from javax.swing import JPanel
 from ReqRespFrame import ReqRespFrame
 import traceback
 import Utils
+from HTTPRequestsThrottler import HTTPRequestsThrottler
 
 class BurpExtender(IBurpExtender, ITab, IHttpListener):
     
@@ -40,6 +41,8 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener):
         self._selectedJob = None
         self._lock = Lock()
         self._errorLock = Lock()
+
+        self.requestor = HTTPRequestsThrottler(self)
         
         # main split pane
         splitpane = JSplitPane(JSplitPane.VERTICAL_SPLIT)
