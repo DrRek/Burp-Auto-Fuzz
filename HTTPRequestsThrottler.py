@@ -11,17 +11,17 @@ class HTTPRequestsThrottler:
         self.threads = []
         self.tLock = Lock()
 
-    def addToTheQueue(self, request, http_service, callback):
+    def addToTheQueue(self, request_id, request, http_service, callback):
         try:
             with self.qLock:
                 self.queue.append({
+                    "id": request_id,
                     "request": request,
                     "http_service": http_service,
                     "callback": callback
                 })
 
                 self.startThreadsIfNotRunning()
-                self.extender.log("DEBUG 3 is this ever called")
         except Exception as e:
             self.extender.log(e, True)
 
@@ -29,9 +29,11 @@ class HTTPRequestsThrottler:
     def startThreadsIfNotRunning(self):
         try:
             with self.tLock:
+                alive_threads = []
                 for t in self.threads:
-                    if not t.is_alive():
-                        self.threads.remove(t)
+                    if t.is_alive():
+                        alive_threads.append(t)
+                self.threads = alive_threads
                 if len(self.threads) < Utils.HTTP_MAX_CONCURRENT_REQUEST:
                     t = threading.Thread(
                         target=self.threadWorker,
@@ -39,7 +41,7 @@ class HTTPRequestsThrottler:
                     )
                     t.daemon = True
                     t.start()
-            self.extender.log("DEBUG 2 is this ever called")
+                    self.threads.append(t)
         except Exception as e:
             self.extender.log(e, True)
 
@@ -47,16 +49,15 @@ class HTTPRequestsThrottler:
         try:
             self.qLock.acquire()
             while self.queue:
-                item = self.queue.pop()
+                item = self.queue.pop(0)
                 self.qLock.release()
 
                 reqResp = self.extender._callbacks.makeHttpRequest(item["http_service"], item["request"])
-                item["callback"](reqResp)
+                item["callback"](item["id"], reqResp)
 
                 time.sleep(Utils.HTTP_REQUESTS_DELAY/1000)
 
                 self.qLock.acquire()
             self.qLock.release()
-            self.extender.log("DEBUG 1 is this ever called")
         except Exception as e:
             self.extender.log(e, True)

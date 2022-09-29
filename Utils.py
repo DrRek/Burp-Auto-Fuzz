@@ -20,7 +20,7 @@ WORDS_TO_SEARCH_IN_RESPONSE = [
 ]
 
 HTTP_MAX_CONCURRENT_REQUEST = 1
-HTTP_REQUESTS_DELAY = 1000
+HTTP_REQUESTS_DELAY = 500
 
 def isParameterAllowed(parameter):
     if parameter.getType() in ALLOWED_PARAMETERS:

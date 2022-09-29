@@ -88,11 +88,15 @@ class JobTableModel(AbstractTableModel):
                 except:
                     return "False"
             if columnIndex == lastIndexBeforeGreps+len(Utils.WORDS_TO_SEARCH_IN_RESPONSE)+1:
-                headers = fuzEntry["analyzedResp"].getHeaders()
-                for header in headers:
-                    if header.startswith("Date: "):
-                        return header[6:-1] 
-                return "n/a"
+                try:
+                    headers = fuzEntry["analyzedResp"].getHeaders()
+                    for header in headers:
+                        if header.startswith("Date: "):
+                            return header[6:-1] 
+                except KeyError:
+                    pass
+                finally:
+                    return "n/a"
             return ""
         except Exception as e:
             self._extender.log(e, True)
@@ -116,7 +120,6 @@ class JobTableMouseListener(MouseListener):
         # return event.getSource.getValueAt(event.getSource().getSelectedRow(), 0)
 
     def getClickedRow(self, event):
-        """Returns the complete clicked row."""
         """Returns the complete clicked row."""
         tbl = event.getSource()
         mdl = tbl.getModel()

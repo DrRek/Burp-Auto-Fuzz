@@ -56,13 +56,13 @@ class FuzzJob:
                     "id": self._fuzList.size(),
                     "grep": {}
                 }
-                self.addNewFuzzingToJob(newFuzzingRequest)
+                fuz_req_index = self.addNewFuzzingToJob(newFuzzingRequest)
 
-                self._extender.requestor.addToTheQueue(newRequest, self._messageInfo.getHttpService(), lambda reqResp: self.finalizeJob(reqResp, newFuzzingRequest))
+                self._extender.requestor.addToTheQueue(fuz_req_index, newRequest, self._messageInfo.getHttpService(), self.finalizeJob)
 
-    def finalizeJob(self, reqResp, newFuzzingRequest):
-        self._extender.log("is this ever called")
+    def finalizeJob(self, fuz_req_index, reqResp):
         try:
+            newFuzzingRequest = self._fuzList[fuz_req_index]
             newFuzzingRequest["reqResp"] = reqResp
             newFuzzingRequest["analyzedResp"] = self._extender._helpers.analyzeResponse(reqResp.getResponse())
 
@@ -71,11 +71,8 @@ class FuzzJob:
                 if self._extender._helpers.indexOf(reqResp.getResponse(), toSearch, False, 0, lenResponse) != -1:
                     newFuzzingRequest["grep"][toSearch] = True
 
+            self._status = FuzzJob.STATUS_FINISHED
             self._extender.updateFuzingTableIfShown(self._id)
-
-            if newFuzzingRequest["id"] == self.getFuzLength():
-                self._status = FuzzJob.STATUS_FINISHED
-                self._extender.updateFuzingTableIfShown(self._id)
 
         except Exception as e:
             self._extender.log(e, True)
@@ -89,7 +86,9 @@ class FuzzJob:
     def addNewFuzzingToJob(self, fuz):
         with self._fuzLock:
             self._fuzList.add(fuz)
+            index = self._fuzList.size()-1
             self._extender.updateFuzingTableIfShown(self._id)
+        return index
 
     def getId(self):
         return self._id
